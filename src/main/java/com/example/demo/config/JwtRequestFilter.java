@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,10 +16,15 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.example.demo.handler.ErrorResponse;
 import com.example.demo.service.MyUserDetailsService;
 import com.example.demo.util.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class JwtRequestFilter extends OncePerRequestFilter {
 	
 	@Autowired
@@ -42,16 +48,28 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 		} else {
 			logger.warn("Missing jwtToken Bearer.");
 		}
-			
-		if(jwtUtil.isTokenValid(jwtToken) && SecurityContextHolder.getContext().getAuthentication() == null) {
-			UserDetails userDetails = this.myUserDetailsService.loadUserByUsername(jwtUtil.getUserAccount());
-			UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = 
-					new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-			usernamePasswordAuthenticationToken
-					.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-			SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+		
+		try {
+			if(jwtUtil.isTokenValid(jwtToken) && SecurityContextHolder.getContext().getAuthentication() == null) {
+				UserDetails userDetails = this.myUserDetailsService.loadUserByUsername(jwtUtil.getUserAccount());
+				UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = 
+						new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+				usernamePasswordAuthenticationToken
+						.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+				SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+			}
+			filterChain.doFilter(request, response);
+		} catch (Exception e) {
+			log.error(e.toString());
+			String error = new ObjectMapper().writeValueAsString(
+					ErrorResponse.builder()
+					.errorMsg("Invalidated token.")
+					.errorCode(HttpStatus.FORBIDDEN.toString())
+					.build());
+			response.setStatus(HttpStatus.FORBIDDEN.value());
+			response.setContentType("application/json");
+			response.getWriter().write(error);
 		}
-		filterChain.doFilter(request, response);
 	}
 
 }

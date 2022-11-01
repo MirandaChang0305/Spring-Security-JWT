@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,11 +34,7 @@ public class AuthController {
 	public ResponseEntity<Object> getAuthenticatedToken(@RequestBody SystemUser systemUser) throws Exception {
 		String account = systemUser.getAccount();
 		String password = systemUser.getPassword();
-		try {
-			auth(account, password);
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		}
+		auth(account, password);
 		SystemUser user = new SystemUser();
 		user.setAccount(account);
 		user.setPassword(password);

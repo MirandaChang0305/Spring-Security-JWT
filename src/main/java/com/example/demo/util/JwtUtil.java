@@ -4,8 +4,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,8 +18,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @Component
 public class JwtUtil {
 	
-	private final Log logger = LogFactory.getLog(JwtUtil.class);
-
 	@Value("${jwt.secret}")
 	private String secret;
 
@@ -49,18 +45,10 @@ public class JwtUtil {
 				.compact();
 	}
 
-	public boolean isTokenValid(String jwtToken) {
-		if(jwtToken == null) {
-			return false;
-		}
-		try {
-			String account = getAccount(jwtToken);
-			SystemUser user = systemUserRepository.findByAccount(account);
-			return user.getAccount().equals(account) && !isExpired(jwtToken);
-		}catch(Exception e) {
-			logger.error("Error:",e);
-			return false;
-		}
+	public boolean isTokenValid(String jwtToken) throws Exception {
+		String account = getAccount(jwtToken);
+		SystemUser user = systemUserRepository.findByAccount(account);
+		return user.getAccount().equals(account) && !isExpired(jwtToken);
 	}
 	
 	public String getUserAccount() {
